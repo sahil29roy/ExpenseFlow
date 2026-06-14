@@ -1,19 +1,30 @@
 const { pool } = require('../config/db');
 const ExpenseModel = require('../models/expenseModel');
 const SplitModel = require('../models/splitModel');
-const SplitCalculator = require('../utils/splitCalculator');
+const SplitService = require('./splitService');
 const UserModel = require('../models/userModel');
 const { NotFoundError, ValidationError } = require('../utils/errors');
 
 class ExpenseService {
   static async createExpense({ description, totalAmount, paidBy, splitType, participants, groupId }) {
-    // 1. Validate splits using the utility calculator
-    const calculatedSplits = SplitCalculator.calculateSplits({
-      totalAmount,
-      splitType,
-      participants,
-      paidBy,
-    });
+    // 1. Validate and calculate splits using the SplitService
+    let calculatedSplits = [];
+    const calcArgs = { totalAmount, participants };
+
+    switch (splitType.toUpperCase()) {
+      case 'EQUAL':
+        calculatedSplits = SplitService.calculateEqualSplit(calcArgs);
+        break;
+      case 'EXACT':
+      case 'UNEQUAL':
+        calculatedSplits = SplitService.calculateUnequalSplit(calcArgs);
+        break;
+      case 'PERCENTAGE':
+        calculatedSplits = SplitService.calculatePercentageSplit(calcArgs);
+        break;
+      default:
+        throw new ValidationError(`Invalid split type: ${splitType}. Must be EQUAL, UNEQUAL, EXACT, or PERCENTAGE.`);
+    }
 
     // 2. Perform DB operations inside a secure Transaction
     const client = await pool.connect();
