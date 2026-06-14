@@ -75,3 +75,9 @@ CREATE INDEX IF NOT EXISTS idx_expense_splits_user_id ON expense_splits(user_id)
 CREATE INDEX IF NOT EXISTS idx_settlements_payer_id ON settlements(payer_id);
 CREATE INDEX IF NOT EXISTS idx_settlements_payee_id ON settlements(payee_id);
 CREATE INDEX IF NOT EXISTS idx_settlements_group_id ON settlements(group_id);
+
+-- Sorting and pagination optimization indexes
+CREATE INDEX IF NOT EXISTS idx_expenses_created_at ON expenses(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_settlements_settled_at ON settlements(settled_at DESC);
+CREATE INDEX IF NOT EXISTS idx_groups_created_at ON groups(created_at DESC);
+

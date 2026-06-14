@@ -128,15 +128,47 @@ class GroupController {
   }
 
   // Get user groups list
+  // Get user groups list with optional pagination
   static async getUserGroups(req, res, next) {
     try {
       const userId = req.user.id;
-      const groups = await GroupModel.findByUserId(userId);
+      const { limit, page } = req.query;
+
+      const parsedLimit = limit ? parseInt(limit, 10) : undefined;
+      const parsedPage = page ? parseInt(page, 10) : undefined;
+
+      let groups;
+      let pagination = null;
+
+      if (parsedLimit !== undefined && parsedPage !== undefined) {
+        const offset = (parsedPage - 1) * parsedLimit;
+        
+        // Count total groups
+        const countRes = await pool.query('SELECT COUNT(*) AS count FROM group_members WHERE user_id = $1', [userId]);
+        const totalGroups = parseInt(countRes.rows[0].count, 10);
+        const totalPages = Math.ceil(totalGroups / parsedLimit);
+
+        groups = await GroupModel.findByUserId(userId, { limit: parsedLimit, offset });
+
+        pagination = {
+          page: parsedPage,
+          limit: parsedLimit,
+          totalGroups,
+          totalPages,
+          hasNextPage: parsedPage < totalPages,
+          hasPrevPage: parsedPage > 1
+        };
+      } else {
+        // Fallback to retrieving all groups if pagination query is not supplied
+        groups = await GroupModel.findByUserId(userId);
+      }
 
       res.status(200).json({
         status: 'success',
-        results: groups.length,
-        data: { groups }
+        data: {
+          groups,
+          pagination
+        }
       });
     } catch (error) {
       next(error);

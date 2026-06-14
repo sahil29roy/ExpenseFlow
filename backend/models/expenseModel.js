@@ -24,18 +24,23 @@ class ExpenseModel {
     return rows[0];
   }
 
-  // Get all expenses paid by or split with a specific user
-  static async getByUserId(userId, client) {
+  // Get all expenses paid by or split with a specific user with optional pagination
+  static async getByUserId(userId, { limit, offset } = {}, client) {
     const queryExecutor = client || db;
-    const queryText = `
+    let queryText = `
       SELECT DISTINCT e.id, e.description, e.total_amount, e.paid_by, e.split_type, e.created_at
       FROM expenses e
       LEFT JOIN expense_splits s ON e.id = s.expense_id
       WHERE e.paid_by = $1 OR s.user_id = $1
       ORDER BY e.created_at DESC
     `;
-    const { rows } = await queryExecutor.query(queryText, [userId]);
-    return rows[0] ? rows : [];
+    const values = [userId];
+    if (limit !== undefined && offset !== undefined) {
+      queryText += ` LIMIT $2 OFFSET $3`;
+      values.push(limit, offset);
+    }
+    const { rows } = await queryExecutor.query(queryText, values);
+    return rows;
   }
 }
 

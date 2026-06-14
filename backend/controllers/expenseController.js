@@ -45,12 +45,15 @@ class ExpenseController {
   static async getMyExpenses(req, res, next) {
     try {
       const userId = req.user.id;
-      const expenses = await ExpenseService.getUserExpenses(userId);
+      const { limit, page } = req.query;
+      const result = await ExpenseService.getUserExpenses(userId, { limit, page });
 
       res.status(200).json({
         status: 'success',
-        results: expenses.length,
-        data: { expenses },
+        data: {
+          expenses: result.expenses,
+          pagination: result.pagination,
+        },
       });
     } catch (error) {
       next(error);

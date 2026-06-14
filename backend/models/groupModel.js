@@ -12,47 +12,56 @@ class GroupModel {
     return rows[0];
   }
 
-  static async update(id, { name, description }) {
+  static async update(id, { name, description }, client) {
+    const queryExecutor = client || db;
     const queryText = `
       UPDATE groups
       SET name = $1, description = $2, updated_at = CURRENT_TIMESTAMP
       WHERE id = $3
       RETURNING id, name, description, created_by, created_at, updated_at
     `;
-    const { rows } = await db.query(queryText, [name, description || null, id]);
+    const { rows } = await queryExecutor.query(queryText, [name, description || null, id]);
     return rows[0];
   }
 
-  static async delete(id) {
+  static async delete(id, client) {
+    const queryExecutor = client || db;
     const queryText = `
       DELETE FROM groups
       WHERE id = $1
       RETURNING id
     `;
-    const { rows } = await db.query(queryText, [id]);
+    const { rows } = await queryExecutor.query(queryText, [id]);
     return rows[0];
   }
 
-  static async findById(id) {
+  static async findById(id, client) {
+    const queryExecutor = client || db;
     const queryText = `
       SELECT id, name, description, created_by, created_at, updated_at
       FROM groups
       WHERE id = $1
     `;
-    const { rows } = await db.query(queryText, [id]);
+    const { rows } = await queryExecutor.query(queryText, [id]);
     return rows[0];
   }
 
-  // Get all groups where user is a member
-  static async findByUserId(userId) {
-    const queryText = `
+  // Get all groups where user is a member with optional pagination
+  static async findByUserId(userId, { limit, offset } = {}, client) {
+    const queryExecutor = client || db;
+    let queryText = `
       SELECT g.id, g.name, g.description, g.created_by, g.created_at, g.updated_at, m.joined_at
       FROM groups g
       JOIN group_members m ON g.id = m.group_id
       WHERE m.user_id = $1
       ORDER BY g.created_at DESC
     `;
-    const { rows } = await db.query(queryText, [userId]);
+    const values = [userId];
+    if (limit !== undefined && offset !== undefined) {
+      queryText += ` LIMIT $2 OFFSET $3`;
+      values.push(limit, offset);
+    }
+    const { rows } = await queryExecutor.query(queryText, values);
     return rows;
   }
 
@@ -92,7 +101,8 @@ class GroupModel {
   }
 
   // Get all members of a group
-  static async getMembers(groupId) {
+  static async getMembers(groupId, client) {
+    const queryExecutor = client || db;
     const queryText = `
       SELECT u.id, u.name, u.email, m.joined_at
       FROM users u
@@ -100,7 +110,7 @@ class GroupModel {
       WHERE m.group_id = $1
       ORDER BY u.name ASC
     `;
-    const { rows } = await db.query(queryText, [groupId]);
+    const { rows } = await queryExecutor.query(queryText, [groupId]);
     return rows;
   }
 }

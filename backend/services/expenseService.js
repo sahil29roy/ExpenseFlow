@@ -6,7 +6,7 @@ const UserModel = require('../models/userModel');
 const { NotFoundError, ValidationError } = require('../utils/errors');
 
 class ExpenseService {
-  static async createExpense({ description, totalAmount, paidBy, splitType, participants, groupId }) {
+  static async createExpense({ description, totalAmount, paidBy, splitType, participants, groupId }, externalClient) {
     // 1. Validate and calculate splits using the SplitService
     let calculatedSplits = [];
     const calcArgs = { totalAmount, participants };
@@ -27,19 +27,23 @@ class ExpenseService {
     }
 
     // 2. Perform DB operations inside a secure Transaction
-    const client = await pool.connect();
+    const client = externalClient || await pool.connect();
+    const shouldManageTransaction = !externalClient;
+
     try {
-      await client.query('BEGIN');
+      if (shouldManageTransaction) {
+        await client.query('BEGIN');
+      }
 
       // Verify that the paid_by user exists
-      const payer = await UserModel.findById(paidBy);
+      const payer = await UserModel.findById(paidBy, client);
       if (!payer) {
         throw new NotFoundError(`Paying user with ID ${paidBy} not found`);
       }
 
       // Verify all participants exist
       for (const split of calculatedSplits) {
-        const participant = await UserModel.findById(split.userId);
+        const participant = await UserModel.findById(split.userId, client);
         if (!participant) {
           throw new NotFoundError(`Participant user with ID ${split.userId} not found`);
         }
@@ -92,17 +96,23 @@ class ExpenseService {
         savedSplits.push(savedSplit);
       }
 
-      await client.query('COMMIT');
+      if (shouldManageTransaction) {
+        await client.query('COMMIT');
+      }
 
       return {
         ...expense,
         splits: savedSplits,
       };
     } catch (err) {
-      await client.query('ROLLBACK');
+      if (shouldManageTransaction) {
+        await client.query('ROLLBACK');
+      }
       throw err;
     } finally {
-      client.release();
+      if (shouldManageTransaction) {
+        client.release();
+      }
     }
   }
 
@@ -119,8 +129,22 @@ class ExpenseService {
     };
   }
 
-  static async getUserExpenses(userId) {
-    const expenses = await ExpenseModel.getByUserId(userId);
+  static async getUserExpenses(userId, { limit = 10, page = 1 } = {}) {
+    const parsedLimit = parseInt(limit, 10) || 10;
+    const parsedPage = parseInt(page, 10) || 1;
+    const offset = (parsedPage - 1) * parsedLimit;
+
+    // Get count of expenses involving user
+    const countQuery = `
+      SELECT COUNT(DISTINCT e.id) AS count
+      FROM expenses e
+      LEFT JOIN expense_splits s ON e.id = s.expense_id
+      WHERE e.paid_by = $1 OR s.user_id = $1
+    `;
+    const countRes = await pool.query(countQuery, [userId]);
+    const totalExpenses = parseInt(countRes.rows[0].count, 10);
+
+    const expenses = await ExpenseModel.getByUserId(userId, { limit: parsedLimit, offset });
     const results = [];
 
     for (const exp of expenses) {
@@ -131,7 +155,19 @@ class ExpenseService {
       });
     }
 
-    return results;
+    const totalPages = Math.ceil(totalExpenses / parsedLimit);
+
+    return {
+      expenses: results,
+      pagination: {
+        page: parsedPage,
+        limit: parsedLimit,
+        totalExpenses,
+        totalPages,
+        hasNextPage: parsedPage < totalPages,
+        hasPrevPage: parsedPage > 1
+      }
+    };
   }
 }
 

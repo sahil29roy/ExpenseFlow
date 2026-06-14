@@ -10,6 +10,9 @@ const pool = new Pool({
   database: process.env.DB_DATABASE || 'expense_sharing',
   password: process.env.DB_PASSWORD || 'postgres',
   port: parseInt(process.env.DB_PORT || '5432', 10),
+  max: parseInt(process.env.DB_MAX_POOL_SIZE || '10', 10),
+  idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT_MS || '30000', 10),
+  connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT_MS || '2000', 10),
 });
 
 const createDatabaseIfNotExists = async () => {
