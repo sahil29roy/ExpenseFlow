@@ -4,6 +4,7 @@ const { initializeDatabase } = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const expenseRoutes = require('./routes/expenseRoutes');
 const groupRoutes = require('./routes/groupRoutes');
+const settlementRoutes = require('./routes/settlementRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const { NotFoundError } = require('./utils/errors');
 require('dotenv').config();
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/groups', groupRoutes);
+app.use('/api/settlements', settlementRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

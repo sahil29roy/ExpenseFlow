@@ -54,6 +54,17 @@ CREATE TABLE IF NOT EXISTS expense_splits (
     CONSTRAINT unique_expense_user_split UNIQUE (expense_id, user_id)
 );
 
+-- Create Settlements table
+CREATE TABLE IF NOT EXISTS settlements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    group_id UUID REFERENCES groups(id) ON DELETE SET NULL,
+    payer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    payee_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    amount NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
+    settled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_payer_payee_different CHECK (payer_id <> payee_id)
+);
+
 -- Indexing for high-performance queries
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_group_members_user_id ON group_members(user_id);
@@ -61,3 +72,6 @@ CREATE INDEX IF NOT EXISTS idx_expenses_group_id ON expenses(group_id);
 CREATE INDEX IF NOT EXISTS idx_expenses_paid_by ON expenses(paid_by);
 CREATE INDEX IF NOT EXISTS idx_expense_splits_expense_id ON expense_splits(expense_id);
 CREATE INDEX IF NOT EXISTS idx_expense_splits_user_id ON expense_splits(user_id);
+CREATE INDEX IF NOT EXISTS idx_settlements_payer_id ON settlements(payer_id);
+CREATE INDEX IF NOT EXISTS idx_settlements_payee_id ON settlements(payee_id);
+CREATE INDEX IF NOT EXISTS idx_settlements_group_id ON settlements(group_id);

@@ -9,7 +9,7 @@ const runTest = async () => {
   try {
     // 1. Drop old tables Cascade to enforce clean UUID schemas rebuild
     console.log('Dropping old tables to rebuild UUID schemas...');
-    await pool.query('DROP TABLE IF EXISTS group_members, groups, expense_splits, expenses, users CASCADE');
+    await pool.query('DROP TABLE IF EXISTS settlements, group_members, groups, expense_splits, expenses, users CASCADE');
     
     // 2. Initialize DB tables
     await initializeDatabase();
@@ -226,11 +226,45 @@ const runTest = async () => {
     console.log('Charlie is owed by:', charlieBalances.owedBy);
 
     console.log('\n--- VERIFYING GLOBAL SIMPLIFIED SETTLEMENTS ---');
-    const globalSettlements = await BalanceService.getGlobalSettlements();
+    let globalSettlements = await BalanceService.getGlobalSettlements();
     console.log('Settlement transactions needed to clear all debts:');
     globalSettlements.forEach(s => {
       console.log(` - ${s.from.name} pays ${s.to.name}: $${s.amount.toFixed(2)}`);
     });
+
+    console.log('\n--- STARTING SETTLEMENT PERSISTENCE AND BALANCE OFFSET TESTING ---');
+    const SettlementService = require('./services/settlementService');
+
+    // Bob settles $50.00 with Alice (out of the $150.00 debt Bob owes Alice globally)
+    console.log('Recording settlement: Bob pays Alice $50.00...');
+    const settle1 = await SettlementService.recordSettlement({
+      groupId: group.id,
+      payerId: bob.id,
+      payeeId: alice.id,
+      amount: 50.00
+    });
+    console.log('Settlement record saved in DB:', settle1);
+
+    // Verify balances update dynamically!
+    console.log('\nChecking Alice balances after Bob settled $50.00...');
+    const aliceBalancesAfter = await BalanceService.getUserBalances(alice.id);
+    console.log('Alice Balance Summary (Total Paid should be 420.00, Owed should be 120 + 50 = 170.00, Net should be 250.00):');
+    console.log(aliceBalancesAfter.summary);
+    console.log('Alice is owed by Bob (should be $100.00 instead of $150.00):', aliceBalancesAfter.owedBy);
+
+    console.log('\nChecking Bob balances after settling $50.00...');
+    const bobBalancesAfter = await BalanceService.getUserBalances(bob.id);
+    console.log('Bob Balance Summary (Total Paid should be 90 + 50 = 140.00, Owed should be 240.00, Net should be -100.00):');
+    console.log(bobBalancesAfter.summary);
+
+    // Verify global settlements decreases B pays A from $150.00 to $100.00
+    console.log('\nRe-evaluating global simplified settlements...');
+    globalSettlements = await BalanceService.getGlobalSettlements();
+    console.log('New simplified settlements recommended:');
+    globalSettlements.forEach(s => {
+      console.log(` - ${s.from.name} pays ${s.to.name}: $${s.amount.toFixed(2)}`);
+    });
+    console.log('--- SETTLEMENT PERSISTENCE TESTING COMPLETED ---');
 
     console.log('\n--- ALL TESTS COMPLETED SUCCESSFULLY ---');
   } catch (error) {
