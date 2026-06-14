@@ -29,7 +29,7 @@ class ExpenseController {
 
   static async getExpense(req, res, next) {
     try {
-      const expenseId = parseInt(req.params.id, 10);
+      const expenseId = req.params.id;
       const expense = await ExpenseService.getExpenseById(expenseId);
 
       res.status(200).json({

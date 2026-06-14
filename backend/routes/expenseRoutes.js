@@ -24,8 +24,8 @@ const createExpenseValidations = [
       const splitType = req.body.splitType ? req.body.splitType.toUpperCase() : '';
       
       for (const p of participants) {
-        if (!p.userId || !Number.isInteger(p.userId)) {
-          throw new Error('Each participant must have a valid integer userId');
+        if (!p.userId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(p.userId)) {
+          throw new Error('Each participant must have a valid UUID userId');
         }
 
         if (splitType === 'EXACT') {
@@ -44,6 +44,11 @@ const createExpenseValidations = [
     }),
 ];
 
+const { param } = require('express-validator');
+const expenseIdValidation = [
+  param('id').isUUID().withMessage('Invalid expense ID format'),
+];
+
 router.route('/')
   .post(validate(createExpenseValidations), ExpenseController.createExpense)
   .get(ExpenseController.getMyExpenses);
@@ -55,6 +60,6 @@ router.route('/settlements')
   .get(ExpenseController.getSettlements);
 
 router.route('/:id')
-  .get(ExpenseController.getExpense);
+  .get(validate(expenseIdValidation), ExpenseController.getExpense);
 
 module.exports = router;

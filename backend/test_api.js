@@ -7,12 +7,16 @@ const runTest = async () => {
   console.log('--- STARTING INTEGRATION TEST AND BALANCES VERIFICATION ---');
 
   try {
-    // 1. Initialize DB tables
+    // 1. Drop old tables Cascade to enforce clean UUID schemas rebuild
+    console.log('Dropping old tables to rebuild UUID schemas...');
+    await pool.query('DROP TABLE IF EXISTS group_members, groups, expense_splits, expenses, users CASCADE');
+    
+    // 2. Initialize DB tables
     await initializeDatabase();
 
     // 2. Clear tables to have a clean slate for validation
     console.log('\nCleaning up database test data...');
-    await pool.query('TRUNCATE TABLE expense_splits, expenses, users RESTART IDENTITY CASCADE');
+    await pool.query('TRUNCATE TABLE group_members, groups, expense_splits, expenses, users RESTART IDENTITY CASCADE');
     console.log('Cleanup completed.');
 
     // 3. Register users
@@ -38,6 +42,57 @@ const runTest = async () => {
     const charlie = charlieData.user;
 
     console.log(`Registered Users:\n - Alice (ID: ${alice.id})\n - Bob (ID: ${bob.id})\n - Charlie (ID: ${charlie.id})`);
+
+    // --- GROUP MANAGEMENT TESTING ---
+    console.log('\n--- STARTING GROUP MANAGEMENT SCENARIOS ---');
+    const GroupModel = require('./models/groupModel');
+    
+    // Create group
+    console.log('Creating group "Apartment 4B" with Alice as creator...');
+    const group = await GroupModel.create({
+      name: 'Apartment 4B',
+      description: 'Shared room expenses',
+      createdBy: alice.id,
+    });
+    console.log('Group created:', group);
+
+    // Auto-membership validation
+    console.log('Adding Alice as group member (auto-member simulated on controller level)...');
+    await GroupModel.addMember(group.id, alice.id);
+
+    // Check members list
+    let members = await GroupModel.getMembers(group.id);
+    console.log('Members list after creation (Alice):', members.map(m => m.name));
+
+    // Add Bob
+    console.log('Adding Bob to the group...');
+    await GroupModel.addMember(group.id, bob.id);
+    members = await GroupModel.getMembers(group.id);
+    console.log('Members list after adding Bob:', members.map(m => m.name));
+
+    // Get user groups list
+    const aliceGroups = await GroupModel.findByUserId(alice.id);
+    console.log('Alice groups memberships list:', aliceGroups.map(g => g.name));
+
+    // Update group details
+    console.log('Updating group title to "Co-living Apartment 4B"...');
+    const updated = await GroupModel.update(group.id, {
+      name: 'Co-living Apartment 4B',
+      description: 'Splitting utility and rent invoices',
+    });
+    console.log('Group details updated:', updated);
+
+    // Create a temporary group to test deletion
+    console.log('Creating temporary group to test deletion...');
+    const tempGroup = await GroupModel.create({
+      name: 'Temp Project Group',
+      createdBy: alice.id
+    });
+    console.log('Deleting temporary group...');
+    const deleted = await GroupModel.delete(tempGroup.id);
+    console.log('Deleted group ID:', deleted.id);
+    console.log('--- GROUP MANAGEMENT SCENARIOS COMPLETED ---');
+
 
     // 4. Create Expenses
     console.log('\nCreating test expenses...');
