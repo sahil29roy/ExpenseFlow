@@ -63,8 +63,39 @@ export default function Dashboard({ user, refreshTrigger, showToast }) {
     return '';
   };
 
+  const getGreetingMessage = () => {
+    if (metrics.netBalance > 0) {
+      return `You have a net positive balance of ${formatCurrency(metrics.netBalance)}. Great job keeping things balanced!`;
+    }
+    if (metrics.netBalance < 0) {
+      return `You owe a net amount of ${formatCurrency(Math.abs(metrics.netBalance))}. Consider settling up soon.`;
+    }
+    return "You're completely settled up! Everyone is even.";
+  };
+
+  const getFormattedDate = () => {
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date().toLocaleDateString('en-US', options);
+  };
+
   return (
     <div className="app-panel">
+      {/* Welcome Card */}
+      <div className="card-wrapper" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to right, #ecfdf5, #ffffff)', borderColor: 'var(--accent-border)' }}>
+        <div>
+          <h2 style={{ fontSize: '20px', color: 'var(--primary)', marginBottom: '4px' }}>
+            Welcome back, {user ? user.name : 'friend'}! 🌟
+          </h2>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+            {getGreetingMessage()}
+          </p>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <span className="badge bg-green" style={{ textTransform: 'none', fontSize: '12px', fontWeight: '500' }}>
+            {getFormattedDate()}
+          </span>
+        </div>
+      </div>
       {/* Metrics Grid */}
       <div className="metrics-grid">
         <div className="metric-card bg-gradient-green">
