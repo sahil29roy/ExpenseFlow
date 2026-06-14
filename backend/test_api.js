@@ -266,6 +266,23 @@ const runTest = async () => {
     });
     console.log('--- SETTLEMENT PERSISTENCE TESTING COMPLETED ---');
 
+    console.log('\n--- STARTING DASHBOARD METRICS AND PAGINATION TESTING ---');
+    const DashboardService = require('./services/dashboardService');
+
+    // Retrieve Alice's dashboard (page 1, limit 2)
+    console.log('Retrieving dashboard for Alice (page 1, limit 2)...');
+    const aliceDashboard = await DashboardService.getUserDashboard(alice.id, { limit: 2, page: 1 });
+    console.log('Alice Dashboard Metrics:', aliceDashboard.metrics);
+    console.log('Alice Recent Expenses count (should be 2):', aliceDashboard.recentExpenses.length);
+    console.log('Pagination Metadata:', aliceDashboard.pagination);
+
+    // Retrieve Alice's dashboard (page 2, limit 2)
+    console.log('Retrieving dashboard for Alice (page 2, limit 2)...');
+    const aliceDashboardPage2 = await DashboardService.getUserDashboard(alice.id, { limit: 2, page: 2 });
+    console.log('Alice Recent Expenses count page 2:', aliceDashboardPage2.recentExpenses.length);
+    console.log('Pagination Metadata page 2:', aliceDashboardPage2.pagination);
+    console.log('--- DASHBOARD METRICS TESTING COMPLETED ---');
+
     console.log('\n--- ALL TESTS COMPLETED SUCCESSFULLY ---');
   } catch (error) {
     console.error('Test execution failed:', error);
