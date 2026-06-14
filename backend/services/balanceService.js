@@ -5,25 +5,34 @@ class BalanceService {
    * Calculates detailed balance sheet for a user
    */
   static async getUserBalances(userId) {
-    // 1. Get sum of all expenses paid by this user
-    const paidQuery = `
-      SELECT COALESCE(SUM(total_amount), 0) as total_paid
-      FROM expenses
-      WHERE paid_by = $1
+    // 1. Optimized PostgreSQL aggregate query combining sums and joins
+    const balanceSummaryQuery = `
+      SELECT 
+        COALESCE(p.total_paid, 0) AS total_paid,
+        COALESCE(o.total_owed, 0) AS total_owed,
+        (COALESCE(p.total_paid, 0) - COALESCE(o.total_owed, 0)) AS net_balance
+      FROM users u
+      LEFT JOIN (
+        SELECT paid_by, SUM(total_amount) AS total_paid
+        FROM expenses
+        GROUP BY paid_by
+      ) p ON u.id = p.paid_by
+      LEFT JOIN (
+        SELECT user_id, SUM(amount) AS total_owed
+        FROM expense_splits
+        GROUP BY user_id
+      ) o ON u.id = o.user_id
+      WHERE u.id = $1
     `;
-    const paidResult = await db.query(paidQuery, [userId]);
-    const totalPaid = Number(paidResult.rows[0].total_paid);
-
-    // 2. Get sum of all splits this user owes (including when they split their own expenses)
-    const owedQuery = `
-      SELECT COALESCE(SUM(amount), 0) as total_owed
-      FROM expense_splits
-      WHERE user_id = $1
-    `;
-    const owedResult = await db.query(owedQuery, [userId]);
-    const totalOwed = Number(owedResult.rows[0].total_owed);
-
-    const netBalance = Number((totalPaid - totalOwed).toFixed(2));
+    
+    const summaryResult = await db.query(balanceSummaryQuery, [userId]);
+    
+    // Default to zero if user hasn't participated in any expenses yet
+    const summaryRow = summaryResult.rows[0] || { total_paid: 0, total_owed: 0, net_balance: 0 };
+    
+    const totalPaid = Number(Number(summaryRow.total_paid).toFixed(2));
+    const totalOwed = Number(Number(summaryRow.total_owed).toFixed(2));
+    const netBalance = Number(Number(summaryRow.net_balance).toFixed(2));
 
     // 3. Get pairwise relationships: How much this user owes others
     // (User is a participant in expenses paid by other users)
