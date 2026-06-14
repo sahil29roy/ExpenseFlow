@@ -68,6 +68,29 @@ class GroupModel {
     return rows[0];
   }
 
+  // Remove member from group_members table
+  static async removeMember(groupId, userId, client) {
+    const queryExecutor = client || db;
+    const queryText = `
+      DELETE FROM group_members
+      WHERE group_id = $1 AND user_id = $2
+      RETURNING group_id, user_id
+    `;
+    const { rows } = await queryExecutor.query(queryText, [groupId, userId]);
+    return rows[0];
+  }
+
+  // Check if a user is a member of a group
+  static async isMember(groupId, userId, client) {
+    const queryExecutor = client || db;
+    const queryText = `
+      SELECT 1 FROM group_members
+      WHERE group_id = $1 AND user_id = $2
+    `;
+    const { rows } = await queryExecutor.query(queryText, [groupId, userId]);
+    return rows.length > 0;
+  }
+
   // Get all members of a group
   static async getMembers(groupId) {
     const queryText = `

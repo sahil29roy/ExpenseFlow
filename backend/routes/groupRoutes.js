@@ -28,4 +28,17 @@ router.route('/:id')
   .put(validate([...uuidParamValidations, ...groupInputValidations]), GroupController.updateGroup)
   .delete(validate(uuidParamValidations), GroupController.deleteGroup);
 
+router.route('/:id/members')
+  .get(validate(uuidParamValidations), GroupController.listMembers)
+  .post(validate([
+    ...uuidParamValidations,
+    body('userId').isUUID().withMessage('userId must be a valid UUID')
+  ]), GroupController.addMember);
+
+router.route('/:id/members/:userId')
+  .delete(validate([
+    ...uuidParamValidations,
+    param('userId').isUUID().withMessage('userId must be a valid UUID')
+  ]), GroupController.removeMember);
+
 module.exports = router;

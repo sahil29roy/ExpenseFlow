@@ -142,6 +142,139 @@ class GroupController {
       next(error);
     }
   }
+
+  // Add Member to Group (Transactional, check existence and duplicates)
+  static async addMember(req, res, next) {
+    const client = await pool.connect();
+    try {
+      const groupId = req.params.id;
+      const { userId } = req.body;
+      const requestorId = req.user.id;
+
+      if (!userId) {
+        throw new ValidationError('userId is required');
+      }
+
+      await client.query('BEGIN');
+
+      // 1. Verify group exists
+      const group = await GroupModel.findById(groupId, client);
+      if (!group) {
+        throw new NotFoundError(`Group with ID ${groupId} not found`);
+      }
+
+      // 2. Verify requesting user is a member of the group
+      const requestorMember = await GroupModel.isMember(groupId, requestorId, client);
+      if (!requestorMember) {
+        throw new ForbiddenError('Only group members can add new participants');
+      }
+
+      // 3. Verify target user exists
+      const UserModel = require('../models/userModel');
+      const targetUser = await UserModel.findById(userId);
+      if (!targetUser) {
+        throw new NotFoundError(`User with ID ${userId} not found`);
+      }
+
+      // 4. Verify target user is not already a member (duplicate check)
+      const targetMember = await GroupModel.isMember(groupId, userId, client);
+      if (targetMember) {
+        const { ConflictError } = require('../utils/errors');
+        throw new ConflictError('User is already a member of this group');
+      }
+
+      // 5. Add membership
+      const membership = await GroupModel.addMember(groupId, userId, client);
+
+      await client.query('COMMIT');
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Member added to group successfully',
+        data: { membership }
+      });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      next(error);
+    } finally {
+      client.release();
+    }
+  }
+
+  // Remove Member from Group (Transactional, checks existence)
+  static async removeMember(req, res, next) {
+    const client = await pool.connect();
+    try {
+      const groupId = req.params.id;
+      const userId = req.params.userId;
+      const requestorId = req.user.id;
+
+      await client.query('BEGIN');
+
+      // 1. Verify group exists
+      const group = await GroupModel.findById(groupId, client);
+      if (!group) {
+        throw new NotFoundError(`Group with ID ${groupId} not found`);
+      }
+
+      // 2. Verify requesting user is a member of the group
+      const requestorMember = await GroupModel.isMember(groupId, requestorId, client);
+      if (!requestorMember) {
+        throw new ForbiddenError('Only group members can remove participants');
+      }
+
+      // 3. Verify target user is currently a member
+      const targetMember = await GroupModel.isMember(groupId, userId, client);
+      if (!targetMember) {
+        throw new NotFoundError(`User with ID ${userId} is not a member of this group`);
+      }
+
+      // 4. Perform membership deletion
+      await GroupModel.removeMember(groupId, userId, client);
+
+      await client.query('COMMIT');
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Member removed from group successfully'
+      });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      next(error);
+    } finally {
+      client.release();
+    }
+  }
+
+  // List Group Members
+  static async listMembers(req, res, next) {
+    try {
+      const groupId = req.params.id;
+      const userId = req.user.id;
+
+      // 1. Verify group exists
+      const group = await GroupModel.findById(groupId);
+      if (!group) {
+        throw new NotFoundError(`Group with ID ${groupId} not found`);
+      }
+
+      // 2. Verify requesting user is a member of the group
+      const requestorMember = await GroupModel.isMember(groupId, userId);
+      if (!requestorMember) {
+        throw new ForbiddenError('You are not authorized to view this group member list');
+      }
+
+      const members = await GroupModel.getMembers(groupId);
+
+      res.status(200).json({
+        status: 'success',
+        results: members.length,
+        data: { members }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = GroupController;

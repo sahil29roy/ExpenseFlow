@@ -70,6 +70,16 @@ const runTest = async () => {
     members = await GroupModel.getMembers(group.id);
     console.log('Members list after adding Bob:', members.map(m => m.name));
 
+    // Remove Bob (verify removal works)
+    console.log('Removing Bob from the group...');
+    await GroupModel.removeMember(group.id, bob.id);
+    members = await GroupModel.getMembers(group.id);
+    console.log('Members list after removing Bob:', members.map(m => m.name));
+
+    // Re-add Bob for rest of the tests if needed
+    console.log('Re-adding Bob to keep him in subsequent test scenarios...');
+    await GroupModel.addMember(group.id, bob.id);
+
     // Get user groups list
     const aliceGroups = await GroupModel.findByUserId(alice.id);
     console.log('Alice groups memberships list:', aliceGroups.map(g => g.name));
