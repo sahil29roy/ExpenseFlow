@@ -43,6 +43,24 @@ class AuthController {
       next(error);
     }
   }
+
+  static async getProfile(req, res, next) {
+    try {
+      res.status(200).json({
+        status: 'success',
+        data: {
+          user: {
+            id: req.user.id,
+            name: req.user.name,
+            email: req.user.email,
+            created_at: req.user.created_at,
+          },
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = AuthController;

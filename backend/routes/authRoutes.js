@@ -18,7 +18,12 @@ const loginValidations = [
   body('password').notEmpty().withMessage('Password is required'),
 ];
 
+const authMiddleware = require('../middleware/auth');
+
 router.post('/register', validate(registerValidations), AuthController.register);
 router.post('/login', validate(loginValidations), AuthController.login);
+
+router.get('/profile', authMiddleware, AuthController.getProfile);
+router.get('/users', authMiddleware, AuthController.getUsers);
 
 module.exports = router;
