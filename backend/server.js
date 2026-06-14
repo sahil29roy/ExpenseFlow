@@ -6,6 +6,7 @@ const expenseRoutes = require('./routes/expenseRoutes');
 const groupRoutes = require('./routes/groupRoutes');
 const settlementRoutes = require('./routes/settlementRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const csvImportRoutes = require('./routes/csvImportRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const { NotFoundError } = require('./utils/errors');
 require('dotenv').config();
@@ -19,6 +20,7 @@ app.use(express.json());
 // 2. ROUTES
 app.use('/api/auth', authRoutes);
 app.use('/api/expenses', expenseRoutes);
+app.use('/api/expenses', csvImportRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/settlements', settlementRoutes);
 app.use('/api/dashboard', dashboardRoutes);

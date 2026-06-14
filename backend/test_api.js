@@ -283,6 +283,43 @@ const runTest = async () => {
     console.log('Pagination Metadata page 2:', aliceDashboardPage2.pagination);
     console.log('--- DASHBOARD METRICS TESTING COMPLETED ---');
 
+    console.log('\n--- STARTING CSV IMPORT AND TRANSACTION VERIFICATION ---');
+    const CsvImportService = require('./services/csvImportService');
+
+    // Create a mock valid CSV file string buffer
+    const validCsvContent = 
+`date,description,paid_by,amount,currency,split_type,split_with,split_details,notes
+2026-06-14,CSV Pizza Night,alice@example.com,60.00,USD,EQUAL,"alice@example.com,bob@example.com",,Extra cheese
+2026-06-14,CSV Shared Cab,bob@example.com,40.00,USD,PERCENTAGE,"alice@example.com,bob@example.com","25,75",
+2026-06-14,CSV Concert tickets,charlie@example.com,150.00,USD,UNEQUAL,"alice@example.com,bob@example.com,charlie@example.com","50,50,50",
+`;
+    const validCsvBuffer = Buffer.from(validCsvContent, 'utf-8');
+
+    console.log('Triggering CSV import with valid contents...');
+    const importResult = await CsvImportService.importExpenses(validCsvBuffer);
+    console.log('Import Status:', importResult.success);
+    console.log('Import Message:', importResult.message);
+    console.log('Import Report:', importResult.report);
+
+    // Create a mock invalid CSV containing an invalid user email (triggers rollback)
+    const invalidCsvContent = 
+`date,description,paid_by,amount,currency,split_type,split_with,split_details,notes
+2026-06-14,CSV Valid item,alice@example.com,30.00,USD,EQUAL,"alice@example.com,bob@example.com",,
+2026-06-14,CSV Invalid item,alice@example.com,20.00,USD,EQUAL,"non_existent@example.com,bob@example.com",,
+`;
+    const invalidCsvBuffer = Buffer.from(invalidCsvContent, 'utf-8');
+
+    console.log('\nTriggering CSV import containing invalid emails (Should Fail and Rollback)...');
+    const invalidResult = await CsvImportService.importExpenses(invalidCsvBuffer);
+    console.log('Import Status (Should be false):', invalidResult.success);
+    console.log('Import Message:', invalidResult.message);
+    console.log('Validation Errors found:', invalidResult.report.errors);
+
+    // Double check that the valid item in the invalid CSV was NOT saved in database (rollback verification)
+    const finalExpensesCheck = await pool.query("SELECT COUNT(*) FROM expenses WHERE description = 'CSV Valid item'");
+    console.log('Count of "CSV Valid item" in database (should be 0 due to atomic rollback):', parseInt(finalExpensesCheck.rows[0].count, 10));
+    console.log('--- CSV IMPORT AND TRANSACTION TESTING COMPLETED ---');
+
     console.log('\n--- ALL TESTS COMPLETED SUCCESSFULLY ---');
   } catch (error) {
     console.error('Test execution failed:', error);
