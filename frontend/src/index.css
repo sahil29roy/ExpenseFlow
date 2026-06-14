@@ -1,4 +1,4 @@
-/* DESIGN SYSTEM STYLESHEET - GREEN PALETTE */
+/* index.css - Custom Green Theme System */
 
 :root {
   /* Green Theme Colors */
@@ -121,7 +121,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 .toast-success { border-left-color: var(--success); }
 .toast-error { border-left-color: var(--error); }
-.toast-warning { border-left-color: var(--warning); }
+.toast-info { border-left-color: #3b82f6; }
 .toast-content {
   font-size: 14px;
   font-weight: 500;
@@ -141,6 +141,7 @@ h1, h2, h3, h4, h5, h6 {
   border: none;
   cursor: pointer;
   transition: all var(--transition-speed) ease;
+  outline: none;
 }
 .btn-primary {
   background-color: var(--primary);
@@ -231,6 +232,7 @@ h1, h2, h3, h4, h5, h6 {
 .logo {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   font-family: 'Outfit', sans-serif;
   font-size: 26px;
@@ -292,7 +294,8 @@ h1, h2, h3, h4, h5, h6 {
 .input-icon-wrapper {
   position: relative;
 }
-.input-icon-wrapper i {
+.input-icon-wrapper i,
+.input-icon-wrapper svg {
   position: absolute;
   left: 14px;
   top: 50%;
@@ -413,7 +416,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 500;
   transition: all 0.2s ease;
 }
-.menu-item i {
+.menu-item svg {
   width: 20px;
   height: 20px;
   transition: all 0.2s ease;
@@ -535,7 +538,7 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: 0.5px;
   color: var(--text-muted);
 }
-.metric-header i {
+.metric-header svg {
   width: 18px;
   height: 18px;
 }
@@ -614,6 +617,7 @@ h1, h2, h3, h4, h5, h6 {
   padding: 30px;
   color: var(--text-light);
   font-style: italic;
+  width: 100%;
 }
 .empty-state-large {
   display: flex;
@@ -624,6 +628,7 @@ h1, h2, h3, h4, h5, h6 {
   text-align: center;
   gap: 12px;
   color: var(--text-muted);
+  width: 100%;
 }
 .large-icon {
   width: 60px;
@@ -718,11 +723,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 .panel-main-content {
   min-height: 500px;
+  display: flex;
 }
 .group-detail-view {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  width: 100%;
 }
 .group-detail-header {
   border-bottom: 1px solid #e2e8f0;
@@ -761,7 +768,7 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--error);
   display: inline-flex;
 }
-.member-chip button i {
+.member-chip button svg {
   width: 14px;
   height: 14px;
 }
@@ -813,6 +820,7 @@ h1, h2, h3, h4, h5, h6 {
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
+  outline: none;
 }
 .pagination-btn:hover:not(:disabled) {
   background-color: var(--accent-light);
@@ -869,6 +877,10 @@ h1, h2, h3, h4, h5, h6 {
   gap: 4px;
   color: var(--text-muted);
 }
+.settle-arrow svg {
+  width: 16px;
+  height: 16px;
+}
 .settle-amount {
   font-family: 'Outfit', sans-serif;
   font-size: 18px;
@@ -917,7 +929,7 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 14px;
   font-weight: 500;
 }
-.file-info i {
+.file-info i, .file-info svg {
   color: var(--text-muted);
 }
 .csv-actions-bar {
