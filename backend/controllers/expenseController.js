@@ -1,0 +1,87 @@
+const ExpenseService = require('../services/expenseService');
+const BalanceService = require('../services/balanceService');
+
+class ExpenseController {
+  static async createExpense(req, res, next) {
+    try {
+      const { description, totalAmount, paidBy, splitType, participants } = req.body;
+      
+      // Default paidBy to current logged-in user if not provided
+      const payerId = paidBy || req.user.id;
+
+      const expense = await ExpenseService.createExpense({
+        description,
+        totalAmount,
+        paidBy: payerId,
+        splitType,
+        participants,
+      });
+
+      res.status(201).json({
+        status: 'success',
+        message: 'Expense created successfully',
+        data: { expense },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getExpense(req, res, next) {
+    try {
+      const expenseId = parseInt(req.params.id, 10);
+      const expense = await ExpenseService.getExpenseById(expenseId);
+
+      res.status(200).json({
+        status: 'success',
+        data: { expense },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getMyExpenses(req, res, next) {
+    try {
+      const userId = req.user.id;
+      const expenses = await ExpenseService.getUserExpenses(userId);
+
+      res.status(200).json({
+        status: 'success',
+        results: expenses.length,
+        data: { expenses },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getMyBalances(req, res, next) {
+    try {
+      const userId = req.user.id;
+      const balances = await BalanceService.getUserBalances(userId);
+
+      res.status(200).json({
+        status: 'success',
+        data: { balances },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getSettlements(req, res, next) {
+    try {
+      const settlements = await BalanceService.getGlobalSettlements();
+
+      res.status(200).json({
+        status: 'success',
+        data: { settlements },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+}
+
+module.exports = ExpenseController;
