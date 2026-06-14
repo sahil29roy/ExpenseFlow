@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS expenses (
     description VARCHAR(255) NOT NULL,
     total_amount NUMERIC(12, 2) NOT NULL CHECK (total_amount > 0),
     paid_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    split_type VARCHAR(20) NOT NULL CHECK (split_type IN ('EQUAL', 'EXACT', 'PERCENTAGE')),
+    split_type VARCHAR(20) NOT NULL CHECK (split_type IN ('EQUAL', 'EXACT', 'PERCENTAGE', 'UNEQUAL')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

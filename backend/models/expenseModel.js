@@ -1,14 +1,14 @@
 const db = require('../config/db');
 
 class ExpenseModel {
-  static async create({ description, totalAmount, paidBy, splitType }, client) {
+  static async create({ description, totalAmount, paidBy, splitType, groupId }, client) {
     const queryExecutor = client || db;
     const queryText = `
-      INSERT INTO expenses (description, total_amount, paid_by, split_type)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id, description, total_amount, paid_by, split_type, created_at, updated_at
+      INSERT INTO expenses (description, total_amount, paid_by, split_type, group_id)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id, description, total_amount, paid_by, split_type, group_id, created_at, updated_at
     `;
-    const values = [description, totalAmount, paidBy, splitType.toUpperCase()];
+    const values = [description, totalAmount, paidBy, splitType.toUpperCase(), groupId || null];
     const { rows } = await queryExecutor.query(queryText, values);
     return rows[0];
   }

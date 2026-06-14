@@ -4,7 +4,7 @@ const BalanceService = require('../services/balanceService');
 class ExpenseController {
   static async createExpense(req, res, next) {
     try {
-      const { description, totalAmount, paidBy, splitType, participants } = req.body;
+      const { description, totalAmount, paidBy, splitType, participants, groupId } = req.body;
       
       // Default paidBy to current logged-in user if not provided
       const payerId = paidBy || req.user.id;
@@ -15,6 +15,7 @@ class ExpenseController {
         paidBy: payerId,
         splitType,
         participants,
+        groupId,
       });
 
       res.status(201).json({

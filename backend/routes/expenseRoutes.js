@@ -15,8 +15,12 @@ const createExpenseValidations = [
   body('totalAmount').isFloat({ gt: 0 }).withMessage('Total amount must be a number greater than 0'),
   body('splitType')
     .toUpperCase()
-    .isIn(['EQUAL', 'EXACT', 'PERCENTAGE'])
-    .withMessage('Split type must be EQUAL, EXACT, or PERCENTAGE'),
+    .isIn(['EQUAL', 'EXACT', 'PERCENTAGE', 'UNEQUAL'])
+    .withMessage('Split type must be EQUAL, UNEQUAL, EXACT, or PERCENTAGE'),
+  body('groupId')
+    .optional({ nullable: true, checkFalsy: true })
+    .isUUID()
+    .withMessage('groupId must be a valid UUID'),
   body('participants')
     .isArray({ min: 1 })
     .withMessage('Participants must be a non-empty array')
@@ -28,9 +32,9 @@ const createExpenseValidations = [
           throw new Error('Each participant must have a valid UUID userId');
         }
 
-        if (splitType === 'EXACT') {
+        if (splitType === 'EXACT' || splitType === 'UNEQUAL') {
           if (p.amount === undefined || isNaN(Number(p.amount)) || Number(p.amount) < 0) {
-            throw new Error('For EXACT split, each participant must have a non-negative numeric amount');
+            throw new Error('For EXACT or UNEQUAL split, each participant must have a non-negative numeric amount');
           }
         }
 

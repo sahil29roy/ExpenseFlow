@@ -6,7 +6,7 @@ const UserModel = require('../models/userModel');
 const { NotFoundError, ValidationError } = require('../utils/errors');
 
 class ExpenseService {
-  static async createExpense({ description, totalAmount, paidBy, splitType, participants }) {
+  static async createExpense({ description, totalAmount, paidBy, splitType, participants, groupId }) {
     // 1. Validate splits using the utility calculator
     const calculatedSplits = SplitCalculator.calculateSplits({
       totalAmount,
@@ -34,12 +34,39 @@ class ExpenseService {
         }
       }
 
+      // If groupId is provided, validate group existence and memberships
+      if (groupId) {
+        const GroupModel = require('../models/groupModel');
+        const { ForbiddenError } = require('../utils/errors');
+
+        // Check group exists
+        const group = await GroupModel.findById(groupId, client);
+        if (!group) {
+          throw new NotFoundError(`Group with ID ${groupId} not found`);
+        }
+
+        // Check if payer is a member of the group
+        const isPayerMember = await GroupModel.isMember(groupId, paidBy, client);
+        if (!isPayerMember) {
+          throw new ForbiddenError('The paying user is not a member of this group');
+        }
+
+        // Check if all split participants are members of the group
+        for (const split of calculatedSplits) {
+          const isMember = await GroupModel.isMember(groupId, split.userId, client);
+          if (!isMember) {
+            throw new ForbiddenError(`Participant ${split.userId} is not a member of this group`);
+          }
+        }
+      }
+
       // Create the core expense
       const expense = await ExpenseModel.create({
         description,
         totalAmount,
         paidBy,
         splitType,
+        groupId,
       }, client);
 
       // Create each split

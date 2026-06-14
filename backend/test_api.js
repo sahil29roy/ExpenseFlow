@@ -103,6 +103,61 @@ const runTest = async () => {
     console.log('Deleted group ID:', deleted.id);
     console.log('--- GROUP MANAGEMENT SCENARIOS COMPLETED ---');
 
+    console.log('\n--- STARTING GROUP EXPENSE VALIDATIONS ---');
+    // Test Group Expense Creation: Payer and all participants are group members (Alice and Bob)
+    console.log('1. Creating group expense: Payer Alice, participants Alice and Bob (Should Succeed)');
+    const groupExp = await ExpenseService.createExpense({
+      description: 'Living room rug',
+      totalAmount: 120.00,
+      paidBy: alice.id,
+      splitType: 'UNEQUAL',
+      groupId: group.id,
+      participants: [
+        { userId: alice.id, amount: 40.00 },
+        { userId: bob.id, amount: 80.00 }
+      ]
+    });
+    console.log('Group expense created successfully:', groupExp.description, 'ID:', groupExp.id);
+
+    // Test Group Expense Creation: Payer belongs to group, but one participant (Charlie) does not (Should Fail)
+    console.log('2. Creating group expense with non-member Charlie as participant (Should Fail)');
+    try {
+      await ExpenseService.createExpense({
+        description: 'Internet invoice',
+        totalAmount: 90.00,
+        paidBy: alice.id,
+        splitType: 'EQUAL',
+        groupId: group.id,
+        participants: [
+          { userId: alice.id },
+          { userId: bob.id },
+          { userId: charlie.id } // Charlie is not a member of Apartment 4B!
+        ]
+      });
+      console.error('ERROR: Expense creation succeeded but should have failed!');
+    } catch (err) {
+      console.log('SUCCESSFUL FAILURE CHECK:', err.message); // Should print participant is not a member
+    }
+
+    // Test Group Expense Creation: Payer (Charlie) does not belong to group (Should Fail)
+    console.log('3. Creating group expense where payer Charlie is not a member (Should Fail)');
+    try {
+      await ExpenseService.createExpense({
+        description: 'New toaster',
+        totalAmount: 30.00,
+        paidBy: charlie.id,
+        splitType: 'EQUAL',
+        groupId: group.id,
+        participants: [
+          { userId: alice.id },
+          { userId: bob.id }
+        ]
+      });
+      console.error('ERROR: Expense creation succeeded but should have failed!');
+    } catch (err) {
+      console.log('SUCCESSFUL FAILURE CHECK:', err.message); // Should print payer is not a member
+    }
+    console.log('--- GROUP EXPENSE VALIDATIONS COMPLETED ---');
 
     // 4. Create Expenses
     console.log('\nCreating test expenses...');

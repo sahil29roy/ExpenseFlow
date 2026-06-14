@@ -28,13 +28,14 @@ class SplitCalculator {
         calculatedSplits = this.calculateEqualSplits(total, participants);
         break;
       case 'EXACT':
+      case 'UNEQUAL':
         calculatedSplits = this.calculateExactSplits(total, participants);
         break;
       case 'PERCENTAGE':
         calculatedSplits = this.calculatePercentageSplits(total, participants);
         break;
       default:
-        throw new ValidationError(`Invalid split type: ${splitType}. Must be EQUAL, EXACT, or PERCENTAGE.`);
+        throw new ValidationError(`Invalid split type: ${splitType}. Must be EQUAL, UNEQUAL, EXACT, or PERCENTAGE.`);
     }
 
     return calculatedSplits;
